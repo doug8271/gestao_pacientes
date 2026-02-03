@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fono Gestão - Carol</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff85a2">
+    <style>
+        :root {
+            --primary: #c82d82;
+            --bg: #ffffff;
+            --card-bg: #f8f9fa;
+            --text: #2d3436;
+            --border: #ddd;
+        }
+        [data-theme="dark"] {
+            --bg: #121212; --card-bg: #1e1e1e; --text: #f5f6fa; --border: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); transition: 0.3s; padding-bottom: 100px; }
+
+        header { 
+            background: var(--primary); color: white; padding: 20px; 
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .carol-profile { display: flex; align-items: center; gap: 15px; }
+        .carol-avatar { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        .container { max-width: 900px; margin: auto; padding: 15px; }
+        
+        .quick-menu { display: flex; gap: 10px; margin: 20px 0; }
+        .btn-menu { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--primary); background: transparent; color: var(--primary); cursor: pointer; font-weight: bold; }
+
+        .profiles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 20px; }
+        .profile-card { text-align: center; cursor: pointer; }
+        .avatar-box { width: 110px; height: 110px; border-radius: 25px; background: #eee; margin: 0 auto 8px; overflow: hidden; border: 3px solid transparent; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Estilo do Extrato Financeiro */
+        .finance-item { display: grid; grid-template-columns: 80px 1fr 100px; gap: 10px; padding: 10px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .finance-header { font-weight: bold; background: var(--primary); color: white; border-radius: 8px 8px 0 0; }
+
+        .consult-card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px; border-left: 6px solid var(--primary); border: 1px solid var(--border); border-left-width: 6px; overflow: hidden; word-wrap: break-word; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
+        .modal-content { background: var(--bg); padding: 25px; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+
+        .hidden { display: none; }
+        .btn { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-sec { background: #636e72; color: white; }
+
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 1rem; }
+    </style>
+</head>
+<body data-theme="light">
+
+<header>
+    <div class="carol-profile">
+        <img src="img/carol.png" alt="Carol" class="carol-avatar" onerror="this.src='https://via.placeholder.com/70'">
+        <div>
+            <div style="font-size: 0.8rem; opacity: 0.9;">Fonoaudióloga</div>
+            <div style="font-weight: bold; font-size: 1.1rem;">Maria Carolina</div>
+        </div>
+    </div>
+    <button onclick="toggleTheme()" id="theme-btn" style="background:none; border:none; cursor:pointer; font-size: 1.5rem;">🌙</button>
+</header>
+
+<div class="container" id="home-screen">
+    <div class="quick-menu">
+        <button class="btn-menu" onclick="openFinanceModal()">📊 Financeiro</button>
+        <button class="btn-menu" onclick="toggleArchive()">📁 Anteriores</button>
+    </div>
+
+    <h3>Pacientes Ativos</h3>
+    <div class="profiles-grid" id="active-patients" style="margin-top:15px"></div>
+
+    <div id="archive-section" class="hidden">
+        <h3 style="margin: 30px 0 15px; color: #636e72;">Pacientes Anteriores</h3>
+        <div class="profiles-grid" id="archived-patients"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="openPatientModal()" style="margin-top: 40px; height: 60px; font-size: 1.1rem;">+ Novo Paciente</button>
+
+    <div style="margin-top: 50px; padding: 25px; background: var(--card-bg); border-radius: 20px; border: 2px dashed var(--primary); text-align: center;">
+        <h3 style="color: var(--primary); margin-bottom: 10px;">📖 Livro de Registros Digital</h3>
+        <p style="font-size: 0.85rem; margin-bottom: 15px; opacity: 0.8;">Salve seu livro regularmente para proteger o histórico dos pacientes.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn btn-primary" onclick="exportarLivro()">💾 Salvar Livro</button>
+            <button class="btn btn-sec" onclick="document.getElementById('importInput').click()">📖 Ler Livro (Restaurar)</button>
+        </div>
+        <input type="file" id="importInput" class="hidden" accept=".json" onchange="lerLivro(event)">
+    </div>
+</div>
+
+<div class="container hidden" id="patient-screen">
+    <button onclick="showHome()" style="background:none; border:none; color:var(--primary); font-weight:bold; cursor:pointer; margin-bottom:20px; font-size: 1rem;">← Voltar</button>
+    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
+        <div class="avatar-box" id="curr-avatar-display" style="width: 85px; height: 85px; margin: 0;"></div>
+        <div>
+            <h2 id="curr-name" style="margin-bottom: 5px;"></h2>
+            <button class="btn-menu" style="padding: 4px 12px; font-size: 0.8rem;" onclick="openPatientModal(true)">Editar Perfil</button>
+        </div>
+    </div>
+    <div id="consultation-form" style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin: 20px 0; border: 1px solid var(--border);">
+        <h3 id="form-title">Lançar Consulta</h3>
+        <div style="display: flex; gap: 10px;"> <input type="date" id="c-date"> <input type="number" id="c-value" placeholder="R$"> </div>
+        <textarea id="c-desc" placeholder="Resumo da sessão..." rows="4"></textarea>
+        <button class="btn btn-primary" id="save-consult-btn" onclick="saveConsult()">Salvar Registro</button>
+        <button class="btn hidden" id="cancel-edit-btn" onclick="resetConsultForm()" style="background:#eee; color:#333;">Cancelar Edição</button>
+    </div>
+    <div id="consults-list"></div>
+    <button class="btn" id="archive-btn" style="background: #b2bec3; color: white; margin-top: 40px;">Mover para Anteriores</button>
+</div>
+
+<div id="finance-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px;">
+        <h3>Extrato Financeiro</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;"> <input type="date" id="fin-start"> <input type="date" id="fin-end"> </div>
+        <button class="btn btn-primary" onclick="calculateFinance()">Gerar Extrato</button>
+        <div id="finance-report" class="hidden" style="margin-top: 20px;">
+            <div class="finance-item finance-header"> <span>Data</span> <span>Paciente</span> <span>Valor</span> </div>
+            <div id="finance-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-top: none;"></div>
+            <h2 id="fin-total" style="margin-top:15px; text-align:right; color:#2ecc71"></h2>
+        </div>
+        <button class="btn btn-sec" onclick="closeFinanceModal()">Fechar</button>
+    </div>
+</div>
+
+<div id="patient-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 id="modal-title">Novo Paciente</h3>
+        <input type="text" id="p-name" placeholder="Nome Completo">
+        <p style="font-size: 0.8rem; margin-top: 10px; font-weight: bold;">Foto:</p>
+        <input type="file" id="p-photo" accept="image/*" style="border:none; padding:0">
+        <button class="btn btn-primary" onclick="processPatientSave()">Confirmar</button>
+        <button class="btn btn-sec" onclick="closePatientModal()">Cancelar</button>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('fonoDB')) || { patients: [] };
+    let activeIdx = null;
+    let editingConsultIdx = null;
+    let isEditingPatient = false;
+
+    function save() { localStorage.setItem('fonoDB', JSON.stringify(db)); }
+
+    function render() {
+        const activeCont = document.getElementById('active-patients');
+        const archCont = document.getElementById('archived-patients');
+        activeCont.innerHTML = ''; archCont.innerHTML = '';
+        db.patients.forEach((p, i) => {
+            const html = `<div class="profile-card" onclick="openPatient(${i})">
+                <div class="avatar-box"><img src="${p.photo || 'https://via.placeholder.com/200'}"></div>
+                <p style="font-weight:600; font-size:0.95rem;">${p.name}</p>
+            </div>`;
+            p.archived ? archCont.innerHTML += html : activeCont.innerHTML += html;
+        });
+    }
+
+    // --- LIVRO DE REGISTROS (BACKUP INTELIGENTE) ---
+    function exportarLivro() {
+        const dataStr = JSON.stringify(db, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const dataHoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', `Livro_Registros_Carol_${dataHoje}.json`);
+        linkElement.click();
+        alert("Livro de Registros salvo! Guarde-o com segurança.");
+    }
+
+    function lerLivro(event) {
+        const arquivo = event.target.files[0];
+        if (!arquivo) return;
+        const leitor = new FileReader();
+        leitor.onload = function(e) {
+            try {
+                const livroLido = JSON.parse(e.target.result);
+                if (livroLido && livroLido.patients) {
+                    if (confirm(`Livro lido! Deseja restaurar ${livroLido.patients.length} pacientes?`)) {
+                        db = livroLido; save(); render();
+                        alert("O site aprendeu os dados com sucesso!");
+                    }
+                }
+            } catch (err) { alert("Erro ao ler o Livro."); }
+        };
+        leitor.readAsText(arquivo);
+    }
+
+    // --- GESTÃO DE PACIENTES ---
+    function openPatientModal(isEdit = false) {
+        isEditingPatient = isEdit;
+        document.getElementById('patient-modal').classList.remove('hidden');
+        document.getElementById('p-name').value = isEdit ? db.patients[activeIdx].name : "";
+        document.getElementById('modal-title').innerText = isEdit ? "Editar Paciente" : "Novo Paciente";
+    }
+
+    function closePatientModal() { document.getElementById('patient-modal').classList.add('hidden'); document.getElementById('p-photo').value = ""; }
+    
+    function processPatientSave() {
+        const name = document.getElementById('p-name').value;
+        const photoFile = document.getElementById('p-photo').files[0];
+        if(!name) return alert("O nome é obrigatório");
+
+        if(photoFile) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 250; canvas.height = 250;
+                    const ctx = canvas.getContext('2d');
+                    const ratio = Math.max(canvas.width / img.width, canvas.height / img.height);
+                    ctx.drawImage(img, (canvas.width - img.width*ratio)/2, (canvas.height - img.height*ratio)/2, img.width*ratio, img.height*ratio);
+                    finalizePatientSave(name, canvas.toDataURL('image/jpeg', 0.8));
+                };
+            };
+            reader.readAsDataURL(photoFile);
+        } else { finalizePatientSave(name, isEditingPatient ? db.patients[activeIdx].photo : ""); }
+    }
+
+    function finalizePatientSave(name, photo) {
+        if(isEditingPatient) { db.patients[activeIdx].name = name; db.patients[activeIdx].photo = photo; }
+        else { db.patients.push({ name, photo, consultations: [], archived: false }); }
+        save(); render(); closePatientModal();
+        if(isEditingPatient) openPatient(activeIdx);
+    }
+
+    // --- CONSULTAS ---
+    function openPatient(i) {
+        activeIdx = i; const p = db.patients[i];
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('patient-screen').classList.remove('hidden');
+        document.getElementById('curr-name').innerText = p.name;
+        document.getElementById('curr-avatar-display').innerHTML = `<img src="${p.photo || 'https://via.placeholder.com/200'}">`;
+        document.getElementById('archive-btn').innerText = p.archived ? "Reativar Paciente" : "Mover para Anteriores";
+        document.getElementById('archive-btn').onclick = () => { p.archived = !p.archived; save(); showHome(); render(); };
+        resetConsultForm(); renderConsults();
+    }
+
+    function saveConsult() {
+        const val = parseFloat(document.getElementById('c-value').value) || 0;
+        const desc = document.getElementById('c-desc').value;
+        const date = document.getElementById('c-date').value;
+        if(!desc || !date) return alert("Preencha data e descrição.");
+        if(editingConsultIdx !== null) db.patients[activeIdx].consultations[editingConsultIdx] = { date, val, desc };
+        else db.patients[activeIdx].consultations.unshift({ date, val, desc });
+        save(); renderConsults(); resetConsultForm();
+    }
+
+    function renderConsults() {
+        const list = document.getElementById('consults-list'); list.innerHTML = '';
+        db.patients[activeIdx].consultations.forEach((c, i) => {
+            list.innerHTML += `<div class="consult-card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; color:var(--primary)">
+                    <span>📅 ${new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                    <span>R$ ${c.val.toFixed(2)}</span>
+                </div>
+                <div style="font-size:1rem; line-height:1.5;">${c.desc.replace(/\n/g, '<br>')}</div>
+                <span style="color:var(--primary); font-size:0.85rem; cursor:pointer; text-decoration:underline; margin-top:10px; display:inline-block;" onclick="editConsult(${i})">Editar Registro</span>
+            </div>`;
+        });
+    }
+
+    function editConsult(i) {
+        const c = db.patients[activeIdx].consultations[i];
+        document.getElementById('c-date').value = c.date; document.getElementById('c-value').value = c.val; document.getElementById('c-desc').value = c.desc;
+        editingConsultIdx = i; document.getElementById('form-title').innerText = "Editando Registro"; document.getElementById('save-consult-btn').innerText = "Atualizar";
+        document.getElementById('cancel-edit-btn').classList.remove('hidden');
+    }
+
+    function resetConsultForm() {
+        editingConsultIdx = null; document.getElementById('c-desc').value = ''; document.getElementById('c-value').value = '';
+        document.getElementById('c-date').valueAsDate = new Date(); document.getElementById('form-title').innerText = "Lançar Consulta";
+        document.getElementById('save-consult-btn').innerText = "Salvar Registro"; document.getElementById('cancel-edit-btn').classList.add('hidden');
+    }
+
+    // --- FINANCEIRO ---
+    function openFinanceModal() { document.getElementById('finance-modal').classList.remove('hidden'); }
+    function closeFinanceModal() { document.getElementById('finance-modal').classList.add('hidden'); }
+    function calculateFinance() {
+        const start = document.getElementById('fin-start').value; const end = document.getElementById('fin-end').value;
+        if(!start || !end) return alert("Selecione o período.");
+        let total = 0, listHTML = '', items = [];
+        db.patients.forEach(p => p.consultations.forEach(c => {
+            if(c.date >= start && c.date <= end) { items.push({ date: c.date, name: p.name, val: c.val }); total += c.val; }
+        }));
+        items.sort((a, b) => new Date(a.date) - new Date(b.date));
+        items.forEach(item => {
+            listHTML += `<div class="finance-item"><span>${new Date(item.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span><span>${item.name}</span><span style="text-align:right;">R$ ${item.val.toFixed(2)}</span></div>`;
+        });
+        document.getElementById('finance-list').innerHTML = listHTML || '<p style="padding:20px; text-align:center;">Sem registros.</p>';
+        document.getElementById('fin-total').innerText = `Total: R$ ${total.toFixed(2)}`;
+        document.getElementById('finance-report').classList.remove('hidden');
+    }
+
+    function toggleTheme() { document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'; }
+    function showHome() { document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('patient-screen').classList.add('hidden'); }
+    function toggleArchive() { document.getElementById('archive-section').classList.toggle('hidden'); }
+
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/Gestao_rotina__dos_pacientes/sw.js'); }
+    render();
+</script>
+</body>
+</html>
